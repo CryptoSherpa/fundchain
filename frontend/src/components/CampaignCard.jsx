@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   getStatus, formatDate, timeLeft, progressPct,
-  formatAmount, currencySymbol, parseAmount,
+  formatAmount, currencySymbol, parseAmount, canClaim,
 } from "../utils";
 import ShareButton from "./ShareButton";
 import styles from "./CampaignCard.module.css";
@@ -19,6 +19,7 @@ export default function CampaignCard({ campaign, contract, usdc, account, onRefr
   const isCreator = account?.toLowerCase() === campaign.creator?.toLowerCase();
   const deadlinePassed = Date.now() / 1000 > Number(campaign.deadline);
   const isUsdc = campaign.currency === 1;
+  const claimOpen = canClaim(campaign);
 
   async function handleDonate(e) {
     e.preventDefault();
@@ -113,7 +114,7 @@ export default function CampaignCard({ campaign, contract, usdc, account, onRefr
 
   const statusLabel = {
     active: "Active",
-    claimable: "Claim Available",
+    "almost-funded": "Almost Funded",
     completed: "Completed",
     failed: "Failed",
     refunded: "Failed",
@@ -163,8 +164,11 @@ export default function CampaignCard({ campaign, contract, usdc, account, onRefr
             </span>
             <span className={styles.pct}>{progress}%</span>
           </div>
-          {status === "claimable" && (
+          {status === "almost-funded" && claimOpen && (
             <p className={styles.thresholdNote}>80% funded — creator can claim</p>
+          )}
+          {status === "almost-funded" && !claimOpen && (
+            <p className={styles.thresholdNote}>Claim available in last 7 days of campaign</p>
           )}
           <div className={styles.meta}>
             <span>Goal: {formatAmount(campaign.goal, campaign.currency)}</span>
@@ -180,7 +184,7 @@ export default function CampaignCard({ campaign, contract, usdc, account, onRefr
         {txMsg && <p className={styles.successMsg} onClick={(e) => e.stopPropagation()}>{txMsg}</p>}
 
         <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
-          {(status === "active" || status === "claimable") && account && (
+          {(status === "active" || status === "almost-funded") && account && (
             <form onSubmit={handleDonate} className={styles.donateForm}>
               <input
                 type="number"
@@ -198,13 +202,13 @@ export default function CampaignCard({ campaign, contract, usdc, account, onRefr
             </form>
           )}
 
-          {(status === "active" || status === "claimable") && !account && (
+          {(status === "active" || status === "almost-funded") && !account && (
             <button className="btn btn-primary" style={{ width: "100%" }} onClick={() => onConnectPrompt("donate")}>
               Donate
             </button>
           )}
 
-          {status === "claimable" && isCreator && (
+          {status === "almost-funded" && isCreator && claimOpen && (
             <button className="btn btn-success" onClick={handleClaim} disabled={claiming}>
               {claiming ? <><span className="spinner" /> Claiming…</> : "Claim Funds"}
             </button>

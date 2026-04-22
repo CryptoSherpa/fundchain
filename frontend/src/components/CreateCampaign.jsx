@@ -243,6 +243,7 @@ export default function CreateCampaign({ contract, onCreated, open, onClose }) {
               <label>Duration (days)</label>
               <input required type="number" min="1" max="365"
                 placeholder="30" value={form.days} onChange={set("days")} />
+              <span className={styles.hint}>Campaigns can run for up to 1 year.</span>
             </div>
           </div>
 

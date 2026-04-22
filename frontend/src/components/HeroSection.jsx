@@ -137,7 +137,9 @@ export default function HeroSection({ account, connecting, onConnect }) {
         </div>
         <h1 className={styles.title}>Decentralized<br />Crowdfunding</h1>
         <p className={styles.subtitle}>
-          Fund projects you believe in. No middlemen,<br />no borders — powered by Ethereum.
+          The first crowdfunding platform built for humans and AI agents.
+          Fund projects you believe in — no middlemen, no borders.
+          Powered by Ethereum. x402 ready.
         </p>
         {account ? (
           <div className={styles.connectedNote}>

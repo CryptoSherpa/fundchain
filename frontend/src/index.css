@@ -142,7 +142,7 @@ label {
   letter-spacing: 0.07em;
 }
 .badge-active    { background: rgba(0,200,150,0.15);  color: var(--accent); border: 1px solid rgba(0,200,150,0.3); }
-.badge-claimable { background: rgba(0,200,150,0.22);  color: var(--accent); border: 1px solid rgba(0,200,150,0.45); box-shadow: 0 0 12px var(--accent-dim); }
+.badge-almost-funded { background: rgba(0,200,150,0.22);  color: var(--accent); border: 1px solid rgba(0,200,150,0.45); box-shadow: 0 0 12px var(--accent-dim); }
 .badge-completed { background: rgba(0,200,150,0.15);  color: var(--accent); border: 1px solid rgba(0,200,150,0.3); }
 .badge-failed    { background: rgba(244,63,94,0.15);  color: var(--danger); border: 1px solid rgba(244,63,94,0.3); }
 .badge-refunded  { background: rgba(244,63,94,0.15);  color: var(--danger); border: 1px solid rgba(244,63,94,0.3); }

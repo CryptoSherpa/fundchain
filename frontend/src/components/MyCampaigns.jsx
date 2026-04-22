@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ethers } from "ethers";
-import { getStatus, formatEth, formatAmount, formatDate, timeLeft, progressPct, isPast } from "../utils";
+import { getStatus, formatEth, formatAmount, formatDate, timeLeft, progressPct, isPast, canClaim } from "../utils";
 import styles from "./MyCampaigns.module.css";
 
 function StatCard({ value, label }) {
@@ -75,9 +75,10 @@ export default function MyCampaigns({ campaigns, contract, account, onRefresh, o
           const progress = progressPct(c);
           const deadlinePassed = Date.now() / 1000 > Number(c.deadline);
           const statusLabel = {
-            active: "Active", claimable: "Claim Available", completed: "Completed",
+            active: "Active", "almost-funded": "Almost Funded", completed: "Completed",
             failed: "Failed", refunded: "Failed",
           }[status];
+          const claimOpen = canClaim(c);
 
           return (
             <div key={c.id} className={styles.row} onClick={() => onOpenModal(c)}>
@@ -120,7 +121,7 @@ export default function MyCampaigns({ campaigns, contract, account, onRefresh, o
 
               {/* Quick action */}
               <div className={styles.rowAction} onClick={(e) => e.stopPropagation()}>
-                {status === "claimable" && (
+                {status === "almost-funded" && claimOpen && (
                   <button
                     className="btn btn-success"
                     onClick={(e) => handleClaim(c.id, e)}
@@ -128,6 +129,9 @@ export default function MyCampaigns({ campaigns, contract, account, onRefresh, o
                   >
                     {claiming === c.id ? <><span className="spinner" /> Claiming…</> : "Claim"}
                   </button>
+                )}
+                {status === "almost-funded" && !claimOpen && (
+                  <span className={styles.resolvedTag}>Claim in last 7 days</span>
                 )}
                 {status === "completed" && (
                   <span className={styles.resolvedTag}>Claimed</span>

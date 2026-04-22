@@ -18,15 +18,32 @@ export const CATEGORIES = [
  *  contract's getClaimThreshold() / CLAIM_THRESHOLD_BPS). */
 export const CLAIM_THRESHOLD_PCT = 80;
 
+/** Window (in seconds) before the deadline in which the creator can claim.
+ *  Mirrors the contract's CLAIM_WINDOW = 7 days. */
+export const CLAIM_WINDOW_SECONDS = 7 * 24 * 60 * 60;
+
 /** Derive display status from on-chain campaign data. */
 export function getStatus(campaign) {
   const now = Date.now() / 1000;
-  const claimable = campaign.amountRaised * 100n >= campaign.goal * BigInt(CLAIM_THRESHOLD_PCT);
+  const thresholdMet = campaign.amountRaised * 100n >= campaign.goal * BigInt(CLAIM_THRESHOLD_PCT);
   const ended = now > Number(campaign.deadline);
   if (campaign.claimed) return "completed";
-  if (claimable) return "claimable";
+  if (thresholdMet) return "almost-funded";
   if (ended) return campaign.refundsProcessed ? "refunded" : "failed";
   return "active";
+}
+
+/** True when the current time is within the final CLAIM_WINDOW_SECONDS of the
+ *  campaign deadline — i.e. the on-chain claimFunds() window is open. */
+export function isInClaimWindow(deadline) {
+  const now = Date.now() / 1000;
+  return now >= Number(deadline) - CLAIM_WINDOW_SECONDS;
+}
+
+/** True when a creator can actually claim right now: threshold met AND inside
+ *  the 7-day claim window. Keep in sync with claimFunds() in Crowdfund.sol. */
+export function canClaim(campaign) {
+  return getStatus(campaign) === "almost-funded" && isInClaimWindow(campaign.deadline);
 }
 
 /** A campaign is "past" once it has left the active feed: either the creator

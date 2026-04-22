@@ -66,6 +66,12 @@
   font-size: 0.8em;
 }
 
+.hint {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin-top: 6px;
+}
+
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 .error {

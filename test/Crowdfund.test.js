@@ -65,6 +65,10 @@ describe("Crowdfund", function () {
     expect(await crowdfund.MAX_DURATION()).to.equal(365n * 24n * 60n * 60n);
   });
 
+  it("exposes CLAIM_WINDOW constant (7 days)", async () => {
+    expect(await crowdfund.CLAIM_WINDOW()).to.equal(BigInt(ONE_WEEK));
+  });
+
   it("exposes USDC_TOKEN address from constructor", async () => {
     expect(await crowdfund.USDC_TOKEN()).to.equal(await usdc.getAddress());
   });
@@ -249,6 +253,43 @@ describe("Crowdfund", function () {
     const id = await createETHCampaign();
     const justBelow = (GOAL_ETH * 8000n) / 10000n - 1n;
     await crowdfund.connect(donor1).donate(id, 0, { value: justBelow });
+    await expect(crowdfund.connect(creator).claimFunds(id))
+      .to.be.revertedWithCustomError(crowdfund, "ClaimThresholdNotMet");
+  });
+
+  // ─── Claim window (7-day) ────────────────────────────────────────────────
+
+  it("ETH: reverts claimFunds before the 7-day claim window opens", async () => {
+    // 30-day campaign: claim window opens at day 23. Donate to 80%, try at day 0.
+    const THIRTY_DAYS = 30 * 24 * 60 * 60;
+    const id = await createETHCampaign(GOAL_ETH, THIRTY_DAYS);
+    await crowdfund.connect(donor1).donate(id, 0, { value: GOAL_ETH });
+    await expect(crowdfund.connect(creator).claimFunds(id))
+      .to.be.revertedWithCustomError(crowdfund, "ClaimWindowNotOpen");
+  });
+
+  it("ETH: creator can claim once inside the 7-day claim window", async () => {
+    const THIRTY_DAYS = 30 * 24 * 60 * 60;
+    const id = await createETHCampaign(GOAL_ETH, THIRTY_DAYS);
+    await crowdfund.connect(donor1).donate(id, 0, { value: GOAL_ETH });
+    // Fast-forward past the window open (start of last 7 days).
+    await time.increase(THIRTY_DAYS - ONE_WEEK + 1);
+    await crowdfund.connect(creator).claimFunds(id);
+    expect((await crowdfund.getCampaign(id)).claimed).to.be.true;
+  });
+
+  it("USDC: reverts claimFunds before the 7-day claim window opens", async () => {
+    const THIRTY_DAYS = 30 * 24 * 60 * 60;
+    const id = await createUSDCCampaign(GOAL_USDC, THIRTY_DAYS);
+    await donateUSDC(donor1, id, GOAL_USDC);
+    await expect(crowdfund.connect(creator).claimFunds(id))
+      .to.be.revertedWithCustomError(crowdfund, "ClaimWindowNotOpen");
+  });
+
+  it("window check runs after threshold check (threshold failure wins)", async () => {
+    // 30-day campaign, still at 0% — both conditions fail but ClaimThresholdNotMet is raised first.
+    const THIRTY_DAYS = 30 * 24 * 60 * 60;
+    const id = await createETHCampaign(GOAL_ETH, THIRTY_DAYS);
     await expect(crowdfund.connect(creator).claimFunds(id))
       .to.be.revertedWithCustomError(crowdfund, "ClaimThresholdNotMet");
   });

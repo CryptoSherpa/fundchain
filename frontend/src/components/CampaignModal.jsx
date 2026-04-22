@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   getStatus, formatDate, timeLeft, progressPct,
-  formatAmount, currencySymbol, parseAmount,
+  formatAmount, currencySymbol, parseAmount, canClaim,
 } from "../utils";
 import ShareButton from "./ShareButton";
 import styles from "./CampaignModal.module.css";
@@ -19,6 +19,7 @@ export default function CampaignModal({ campaign, contract, usdc, account, onClo
   const progress = progressPct(campaign);
   const isCreator = account?.toLowerCase() === campaign.creator?.toLowerCase();
   const deadlinePassed = Date.now() / 1000 > Number(campaign.deadline);
+  const claimOpen = canClaim(campaign);
 
   // Close on ESC
   useEffect(() => {
@@ -145,7 +146,7 @@ export default function CampaignModal({ campaign, contract, usdc, account, onClo
             <div className={styles.badges}>
               <span className={`badge badge-${status}`}>
                 {status === "active" ? "Active"
-                  : status === "claimable" ? "Claim Available"
+                  : status === "almost-funded" ? "Almost Funded"
                   : status === "completed" ? "Completed"
                   : "Failed"}
               </span>
@@ -213,7 +214,7 @@ export default function CampaignModal({ campaign, contract, usdc, account, onClo
 
           {/* Actions */}
           <div className={styles.actions}>
-            {(status === "active" || status === "claimable") && account && (
+            {(status === "active" || status === "almost-funded") && account && (
               <form onSubmit={handleDonate} className={styles.donateForm}>
                 <input
                   type="number"
@@ -233,7 +234,7 @@ export default function CampaignModal({ campaign, contract, usdc, account, onClo
               </form>
             )}
 
-            {(status === "active" || status === "claimable") && !account && (
+            {(status === "active" || status === "almost-funded") && !account && (
               <button
                 className="btn btn-primary"
                 style={{ width: "100%" }}
@@ -243,10 +244,16 @@ export default function CampaignModal({ campaign, contract, usdc, account, onClo
               </button>
             )}
 
-            {status === "claimable" && isCreator && (
+            {status === "almost-funded" && isCreator && claimOpen && (
               <button className="btn btn-success" onClick={handleClaim} disabled={claiming} style={{ width: "100%" }}>
                 {claiming ? <><span className="spinner" /> Claiming…</> : "Claim Funds (95% after platform fee)"}
               </button>
+            )}
+
+            {status === "almost-funded" && !claimOpen && (
+              <div className={styles.resolvedNote}>
+                Claim available in last 7 days of campaign
+              </div>
             )}
 
             {status === "completed" && (

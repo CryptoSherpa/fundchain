@@ -10,6 +10,7 @@ contract Crowdfund is ReentrancyGuard {
     uint256 public constant PLATFORM_FEE_BPS = 500;      // 5%
     uint256 public constant CLAIM_THRESHOLD_BPS = 8000;  // 80%
     uint256 public constant MAX_DURATION = 365 days;
+    uint256 public constant CLAIM_WINDOW = 7 days;
 
     // Goal bounds are currency-aware since ETH (18 dp) and USDC (6 dp) are wildly
     // different scales. Raw base units.
@@ -66,6 +67,7 @@ contract Crowdfund is ReentrancyGuard {
     error CampaignAlreadyClaimed();
     error ClaimThresholdNotMet();
     error ClaimThresholdMet();
+    error ClaimWindowNotOpen();
     error AlreadyClaimed();
     error AlreadyProcessed();
     error NothingToRefund();
@@ -165,6 +167,7 @@ contract Crowdfund is ReentrancyGuard {
         Campaign storage c = _requireCampaign(id);
         if (msg.sender != c.creator) revert NotCreator();
         if (c.amountRaised * 10_000 < c.goal * CLAIM_THRESHOLD_BPS) revert ClaimThresholdNotMet();
+        if (block.timestamp < c.deadline - CLAIM_WINDOW) revert ClaimWindowNotOpen();
         if (c.claimed) revert AlreadyClaimed();
 
         c.claimed = true;

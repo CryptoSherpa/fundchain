@@ -221,7 +221,7 @@ function MainApp() {
                 {[
                   { key: "all",       label: "All" },
                   { key: "active",    label: "Active" },
-                  { key: "claimable", label: "Claim Available" },
+                  { key: "almost-funded", label: "Almost Funded" },
                 ].map(({ key, label }) => (
                   <button
                     key={key}
