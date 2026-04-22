@@ -1,127 +1,116 @@
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
+import {
+  useWeb3Modal,
+  useWeb3ModalAccount,
+  useWeb3ModalProvider,
+  useDisconnect,
+} from "@web3modal/ethers/react";
 import { CROWDFUND_ABI, ERC20_ABI } from "./abi";
 import contractAddress from "./contract-address.json";
+import { EXPECTED_CHAIN, WALLETCONNECT_CONFIGURED } from "./web3modal";
 
-// Map the network name written by the deploy script into the chainId we expect
-// MetaMask to be on. Anything not listed falls back to localhost/Hardhat.
-const CHAIN_IDS = {
-  sepolia:   11155111,
-  mainnet:   1,
-  localhost: 31337,
-  hardhat:   31337,
-};
-const EXPECTED_CHAIN_ID = CHAIN_IDS[contractAddress.network] ?? 31337;
+const EXPECTED_CHAIN_ID = EXPECTED_CHAIN.chainId;
 const EXPECTED_NETWORK_NAME = contractAddress.network;
-
-const FALLBACK_RPC =
-  contractAddress.network === "sepolia"
-    ? "https://rpc.sepolia.org"
-    : "http://127.0.0.1:8545";
+const FALLBACK_RPC = EXPECTED_CHAIN.rpcUrl;
 
 // ethers v6 BrowserProvider caches the chainId it was constructed with, so any
-// in-flight RPC call after a MetaMask network switch rejects with
-// "network changed: X => Y" (code: NETWORK_ERROR). Swallow those at the window
-// level — the chainChanged listener will reload the page a beat later.
+// in-flight RPC call after a wallet network switch rejects with
+// "network changed: X => Y" (code: NETWORK_ERROR). Web3Modal triggers a
+// re-render and we rebuild the provider, but swallow those unhandled rejections
+// so DevTools stays quiet.
 function isStaleNetworkError(err) {
   return err?.code === "NETWORK_ERROR" || /network changed/i.test(err?.message || "");
 }
 
 export function useContract() {
+  const { open } = useWeb3Modal();
+  const { disconnect } = useDisconnect();
+  const { address, chainId: connectedChainId, isConnected } = useWeb3ModalAccount();
+  const { walletProvider } = useWeb3ModalProvider();
+
   const [readContract, setReadContract] = useState(null);
   const [readUsdc, setReadUsdc] = useState(null);
 
+  const [provider, setProvider]   = useState(null);
+  const [signer,   setSigner]     = useState(null);
+  const [contract, setContract]   = useState(null);
+  const [usdc,     setUsdc]       = useState(null);
+  const [connecting, setConnecting] = useState(false);
+  const [error,    setError]      = useState(null);
+
+  // Read-only provider — uses Alchemy if configured, else the chain's public RPC.
+  // Independent of the connected wallet so public reads work even when signed
+  // out, or if the wallet is on the wrong chain.
   useEffect(() => {
     try {
-      const rpcUrl = import.meta.env.VITE_ALCHEMY_RPC_URL;
-      const provider = rpcUrl
-        ? new ethers.JsonRpcProvider(rpcUrl)
-        : window.ethereum
-          ? new ethers.BrowserProvider(window.ethereum)
-          : new ethers.JsonRpcProvider(FALLBACK_RPC);
-      setReadContract(new ethers.Contract(contractAddress.address, CROWDFUND_ABI, provider));
+      const rpcUrl = import.meta.env.VITE_ALCHEMY_RPC_URL || FALLBACK_RPC;
+      const p = new ethers.JsonRpcProvider(rpcUrl);
+      setReadContract(new ethers.Contract(contractAddress.address, CROWDFUND_ABI, p));
       if (contractAddress.usdc) {
-        setReadUsdc(new ethers.Contract(contractAddress.usdc, ERC20_ABI, provider));
+        setReadUsdc(new ethers.Contract(contractAddress.usdc, ERC20_ABI, p));
       }
     } catch (e) {
       console.warn("[useContract] could not create read-only provider/contract:", e);
     }
   }, []);
 
-  const [provider, setProvider]   = useState(null);
-  const [signer,   setSigner]     = useState(null);
-  const [contract, setContract]   = useState(null);
-  const [usdc,     setUsdc]       = useState(null);
-  const [account,  setAccount]    = useState(null);
-  const [chainId,  setChainId]    = useState(null);
-  const [connecting, setConnecting] = useState(false);
-  const [error,    setError]      = useState(null);
+  // Wallet-signer provider — rebuilt whenever the connected wallet or chain changes.
+  useEffect(() => {
+    let cancelled = false;
+    async function setup() {
+      if (!walletProvider || !isConnected) {
+        setProvider(null); setSigner(null); setContract(null); setUsdc(null);
+        return;
+      }
+      try {
+        const p = new ethers.BrowserProvider(walletProvider);
+        const s = await p.getSigner();
+        if (cancelled) return;
+        setProvider(p);
+        setSigner(s);
+        setContract(new ethers.Contract(contractAddress.address, CROWDFUND_ABI, s));
+        setUsdc(
+          contractAddress.usdc
+            ? new ethers.Contract(contractAddress.usdc, ERC20_ABI, s)
+            : null
+        );
+      } catch (e) {
+        if (cancelled || isStaleNetworkError(e)) return;
+        console.error("[useContract] signer setup failed:", e);
+        setError(e.shortMessage || e.message || "Failed to load wallet signer");
+      }
+    }
+    setup();
+    return () => { cancelled = true; };
+  }, [walletProvider, isConnected, connectedChainId]);
 
   const connect = useCallback(async () => {
-    if (!window.ethereum) {
-      setError("MetaMask not detected. Please install MetaMask.");
+    setError(null);
+    if (!WALLETCONNECT_CONFIGURED) {
+      setError(
+        "Wallet connect is not configured (missing VITE_WALLETCONNECT_PROJECT_ID)."
+      );
       return;
     }
     setConnecting(true);
-    setError(null);
     try {
-      const _provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts  = await _provider.send("eth_requestAccounts", []);
-      const _signer   = await _provider.getSigner();
-      const network   = await _provider.getNetwork();
-      const _contract = new ethers.Contract(contractAddress.address, CROWDFUND_ABI, _signer);
-      const _usdc     = contractAddress.usdc
-        ? new ethers.Contract(contractAddress.usdc, ERC20_ABI, _signer)
-        : null;
-
-      setProvider(_provider);
-      setSigner(_signer);
-      setContract(_contract);
-      setUsdc(_usdc);
-      setAccount(accounts[0]);
-      setChainId(Number(network.chainId));
+      await open();
     } catch (e) {
-      if (isStaleNetworkError(e)) {
-        // The user changed networks mid-connect; the reload below handles it.
-        return;
+      if (!isStaleNetworkError(e)) {
+        setError(e.shortMessage || e.message || "Failed to connect wallet");
       }
-      console.error("[useContract] connect failed:", e);
-      setError(e.shortMessage || e.message || "Failed to connect wallet");
     } finally {
       setConnecting(false);
     }
-  }, []);
+  }, [open]);
 
-  // MetaMask events: chainChanged is handled with a hard reload (standard
-  // ethers v6 pattern — the cached BrowserProvider can't survive a chain
-  // change). accountsChanged we can handle in place.
-  useEffect(() => {
-    if (!window.ethereum) return;
-
-    const handleAccountsChanged = (accounts) => {
-      setAccount(accounts[0] || null);
-      if (!accounts[0]) { setSigner(null); setContract(null); setUsdc(null); }
-    };
-    const handleChainChanged = () => {
-      // Full reload re-initializes the provider on the new chain cleanly.
-      window.location.reload();
-    };
-
-    window.ethereum.on("accountsChanged", handleAccountsChanged);
-    window.ethereum.on("chainChanged",    handleChainChanged);
-    return () => {
-      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
-      window.ethereum.removeListener("chainChanged",    handleChainChanged);
-    };
-  }, []);
-
-  // Global safety net: any in-flight RPC rejected by ethers with NETWORK_ERROR
-  // after a chain switch shouldn't show up as a scary unhandled rejection in
-  // DevTools. The chainChanged reload handles the state reset.
+  // Swallow stale NETWORK_ERROR rejections from in-flight reads that race a
+  // chain switch — the effect above rebuilds the provider on the next render.
   useEffect(() => {
     const onUnhandled = (event) => {
       if (isStaleNetworkError(event.reason)) {
-        console.warn("[useContract] swallowing stale NETWORK_ERROR (reload pending)");
+        console.warn("[useContract] swallowing stale NETWORK_ERROR");
         event.preventDefault();
       }
     };
@@ -129,12 +118,15 @@ export function useContract() {
     return () => window.removeEventListener("unhandledrejection", onUnhandled);
   }, []);
 
+  const chainId = connectedChainId ?? null;
   const isWrongNetwork = chainId !== null && chainId !== EXPECTED_CHAIN_ID;
 
   return {
     provider, signer, contract, readContract,
     usdc, readUsdc,
-    account, chainId, connecting, error, connect,
+    account: address ?? null,
+    chainId,
+    connecting, error, connect, disconnect,
     expectedChainId: EXPECTED_CHAIN_ID,
     expectedNetworkName: EXPECTED_NETWORK_NAME,
     isWrongNetwork,
