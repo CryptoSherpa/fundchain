@@ -33,9 +33,12 @@ export function useContract() {
 
   useEffect(() => {
     try {
-      const provider = window.ethereum
-        ? new ethers.BrowserProvider(window.ethereum)
-        : new ethers.JsonRpcProvider(FALLBACK_RPC);
+      const rpcUrl = import.meta.env.VITE_ALCHEMY_RPC_URL;
+      const provider = rpcUrl
+        ? new ethers.JsonRpcProvider(rpcUrl)
+        : window.ethereum
+          ? new ethers.BrowserProvider(window.ethereum)
+          : new ethers.JsonRpcProvider(FALLBACK_RPC);
       setReadContract(new ethers.Contract(contractAddress.address, CROWDFUND_ABI, provider));
       if (contractAddress.usdc) {
         setReadUsdc(new ethers.Contract(contractAddress.usdc, ERC20_ABI, provider));
