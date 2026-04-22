@@ -8,7 +8,7 @@
 //
 // Spec reference: https://www.x402.org
 
-export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001";
+export const API_BASE = import.meta.env.VITE_API_BASE || "https://fundchain.up.railway.app";
 
 export const X402_HEADER = "X-PAYMENT";
 export const X402_REQUIREMENTS_HEADER = "X-Payment-Required";
