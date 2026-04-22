@@ -1,0 +1,220 @@
+.hero {
+  position: relative;
+  width: 100%;
+  min-height: 520px;
+  background: radial-gradient(ellipse at 50% 0%, #0a1a2e 0%, #040710 60%, #080b14 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ── Floating Coins ── */
+.coin {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  user-select: none;
+  pointer-events: none;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.coinSymbol {
+  font-size: inherit;
+  font-weight: 900;
+  color: rgba(255,255,255,0.92);
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  line-height: 1;
+}
+
+.coinReflect {
+  position: absolute;
+  top: 8%;
+  left: 10%;
+  width: 40%;
+  height: 30%;
+  background: rgba(255,255,255,0.18);
+  border-radius: 50%;
+  filter: blur(4px);
+}
+
+/* Bitcoin */
+.coinBtc {
+  width: 104px; height: 104px;
+  font-size: 2.4rem;
+  background: radial-gradient(circle at 35% 30%, #ffd580 0%, #f7931a 45%, #c46a00 100%);
+  box-shadow:
+    0 0 40px rgba(247,147,26,0.55),
+    0 0 80px rgba(247,147,26,0.2),
+    inset 0 3px 6px rgba(255,220,100,0.3),
+    inset 0 -3px 6px rgba(0,0,0,0.3);
+  border: 2px solid rgba(255,190,80,0.3);
+  left: 8%;
+  top: 50%;
+  transform: translateY(-50%) perspective(300px) rotateY(-18deg) rotateX(6deg);
+  animation: floatBtc 6s ease-in-out infinite;
+}
+
+/* Ethereum */
+.coinEth {
+  width: 78px; height: 78px;
+  font-size: 1.8rem;
+  background: radial-gradient(circle at 35% 30%, #a78bfa 0%, #7c3aed 50%, #4c1d95 100%);
+  box-shadow:
+    0 0 36px rgba(124,58,237,0.6),
+    0 0 72px rgba(124,58,237,0.2),
+    inset 0 3px 5px rgba(200,170,255,0.25);
+  border: 2px solid rgba(167,139,250,0.3);
+  left: 22%;
+  top: 28%;
+  transform: perspective(300px) rotateY(-10deg) rotateX(-8deg);
+  animation: floatEth 7.5s ease-in-out infinite 1s;
+}
+
+/* Dollar */
+.coinUsd {
+  width: 88px; height: 88px;
+  font-size: 2rem;
+  background: radial-gradient(circle at 35% 30%, #6ee7b7 0%, #00c896 45%, #007a5a 100%);
+  box-shadow:
+    0 0 38px rgba(0,200,150,0.55),
+    0 0 72px rgba(0,200,150,0.2),
+    inset 0 3px 6px rgba(110,231,183,0.25);
+  border: 2px solid rgba(0,200,150,0.35);
+  right: 8%;
+  top: 50%;
+  transform: translateY(-50%) perspective(300px) rotateY(18deg) rotateX(6deg);
+  animation: floatUsd 5.5s ease-in-out infinite 0.5s;
+}
+
+@keyframes floatBtc {
+  0%, 100% { transform: translateY(-50%) perspective(300px) rotateY(-18deg) rotateX(6deg); }
+  50%       { transform: translateY(calc(-50% - 20px)) perspective(300px) rotateY(-6deg) rotateX(-4deg); }
+}
+@keyframes floatEth {
+  0%, 100% { transform: perspective(300px) rotateY(-10deg) rotateX(-8deg); }
+  50%       { transform: translateY(-22px) perspective(300px) rotateY(8deg) rotateX(4deg); }
+}
+@keyframes floatUsd {
+  0%, 100% { transform: translateY(-50%) perspective(300px) rotateY(18deg) rotateX(6deg); }
+  50%       { transform: translateY(calc(-50% - 16px)) perspective(300px) rotateY(6deg) rotateX(-4deg); }
+}
+
+/* ── Content ── */
+.content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  max-width: 640px;
+  padding: 80px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.tagline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: rgba(0,200,150,0.1);
+  border: 1px solid rgba(0,200,150,0.25);
+  padding: 5px 14px;
+  border-radius: 999px;
+}
+
+.taglineDot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent); }
+  50%       { opacity: 0.6; box-shadow: 0 0 16px var(--accent); }
+}
+
+.title {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 900;
+  line-height: 1.1;
+  color: #fff;
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.6);
+}
+
+.subtitle {
+  font-size: 1.05rem;
+  color: rgba(232,237,245,0.7);
+  line-height: 1.7;
+  max-width: 440px;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 36px;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), #00a87a);
+  color: #000;
+  border: none;
+  cursor: pointer;
+  box-shadow:
+    0 0 32px var(--accent-glow),
+    0 8px 24px rgba(0,0,0,0.4);
+  transition: all 0.25s;
+  margin-top: 8px;
+}
+.cta:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 48px var(--accent-glow), 0 12px 32px rgba(0,0,0,0.5);
+}
+.cta:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.connectedNote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.greenDot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .coinBtc  { width: 70px; height: 70px; font-size: 1.6rem; left: 2%; }
+  .coinEth  { width: 52px; height: 52px; font-size: 1.2rem; left: 18%; top: 22%; }
+  .coinUsd  { width: 60px; height: 60px; font-size: 1.4rem; right: 2%; }
+  .content  { padding: 60px 16px; }
+}
+@media (max-width: 480px) {
+  .coinBtc, .coinEth, .coinUsd { display: none; }
+}

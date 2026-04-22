@@ -1,0 +1,274 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;
+  animation: modalIn 0.22s ease;
+}
+
+@keyframes modalIn {
+  from { transform: translateY(16px) scale(0.97); opacity: 0; }
+  to   { transform: translateY(0)     scale(1);    opacity: 1; }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.modalIcon { font-size: 1.2rem; }
+.modalTitle h2 { font-size: 1.05rem; font-weight: 700; }
+
+.close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  cursor: pointer;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-xs);
+  transition: background 0.15s, color 0.15s;
+}
+.close:hover { background: var(--surface2); color: var(--text); }
+
+.form { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+
+.field { display: flex; flex-direction: column; }
+
+.optional {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.8em;
+}
+
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.error {
+  font-size: 0.84rem;
+  color: var(--danger);
+  background: rgba(244,63,94,0.08);
+  border: 1px solid rgba(244,63,94,0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+
+.note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--accent-dim);
+  border: 1px solid rgba(0,200,150,0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 13px;
+  font-size: 0.95rem;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Image upload zone ── */
+.dropZone {
+  position: relative;
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+  background: var(--surface2);
+  user-select: none;
+}
+.dropZone:hover {
+  border-color: var(--accent);
+  background: rgba(0,200,150,0.04);
+}
+
+.dropZoneActive {
+  border-color: var(--accent);
+  background: rgba(0,200,150,0.07);
+}
+
+.dropIcon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: var(--accent);
+  margin-bottom: 4px;
+  transition: border-color 0.18s;
+}
+.dropZone:hover .dropIcon { border-color: var(--accent); }
+
+.dropText {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.dropSub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.browseBtn {
+  padding: 6px 18px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.browseBtn:hover { background: var(--surface2); border-color: var(--accent); }
+
+.dropHint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Preview state */
+.dropZonePreview {
+  padding: 0;
+  overflow: hidden;
+  min-height: 160px;
+}
+
+.preview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+  border-radius: calc(var(--radius-sm) - 2px);
+}
+
+.previewOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.18s;
+  border-radius: calc(var(--radius-sm) - 2px);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+}
+.dropZonePreview:hover .previewOverlay { opacity: 1; }
+
+.clearBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: rgba(8,11,20,0.72);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 2;
+}
+.clearBtn:hover { background: rgba(244,63,94,0.6); }
+
+/* Currency picker */
+.currencyRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.currencyOption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+}
+.currencyOption input { display: none; }
+.currencyOption:hover { border-color: var(--accent); color: var(--text); }
+.currencyActive {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--text);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+.currencyLabel { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+.currencyActive .currencyLabel { color: var(--accent); }
+.currencySub { font-size: 0.72rem; color: var(--text-muted); }
+
+/* Arweave upload warning (non-blocking) */
+.uploadWarning {
+  font-size: 0.82rem;
+  color: var(--orange);
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+
+/* Image upload indeterminate progress bar */
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progressIndeterminate {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  border-radius: 999px;
+  animation: indeterminateSlide 1.2s ease-in-out infinite;
+}
+@keyframes indeterminateSlide {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}

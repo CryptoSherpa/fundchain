@@ -1,0 +1,23 @@
+{
+  "name": "fundchain-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Express + x402 REST gateway for the FundChain crowdfunding contract.",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
+    "helmet": "^8.1.0",
+    "x402-express": "^1.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

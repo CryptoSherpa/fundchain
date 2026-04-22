@@ -1,0 +1,50 @@
+// Currency enum mirrors Solidity.
+export const Currency = { ETH: 0, USDC: 1 };
+
+export const CROWDFUND_ABI = [
+  "function campaignCount() view returns (uint256)",
+  "function getClaimThreshold() pure returns (uint256)",
+  "function CLAIM_THRESHOLD_BPS() view returns (uint256)",
+  "function PLATFORM_FEE_BPS() view returns (uint256)",
+  "function MIN_GOAL_ETH() view returns (uint256)",
+  "function MAX_GOAL_ETH() view returns (uint256)",
+  "function MIN_GOAL_USDC() view returns (uint256)",
+  "function MAX_GOAL_USDC() view returns (uint256)",
+  "function MAX_DURATION() view returns (uint256)",
+  "function USDC_TOKEN() view returns (address)",
+  "function createCampaign(string title, string description, string category, string imageUrl, uint256 goal, uint256 deadline, uint8 currency) returns (uint256)",
+  "function donate(uint256 id, uint256 amount) payable",
+  "function claimFunds(uint256 id)",
+  "function processRefunds(uint256 id)",
+  "function refund(uint256 id)",
+  "function getCampaign(uint256 id) view returns (address creator, string title, string description, string category, string imageUrl, uint256 goal, uint256 deadline, uint256 amountRaised, bool claimed, bool refundsProcessed, uint256 donorCount, uint8 currency)",
+  "function getCampaignCurrency(uint256 id) view returns (uint8)",
+  "function getContribution(uint256 id, address donor) view returns (uint256)",
+  "event CampaignCreated(uint256 indexed id, address indexed creator, string title, string category, uint256 goal, uint256 deadline, uint8 currency)",
+  "event DonationReceived(uint256 indexed id, address indexed donor, uint256 amount)",
+  "event FundsClaimed(uint256 indexed id, uint256 creatorAmount, uint256 feeAmount)",
+  "event RefundIssued(uint256 indexed id, address indexed donor, uint256 amount)",
+  "event RefundsProcessed(uint256 indexed id, uint256 successCount, uint256 skippedCount)",
+  "event RefundSkipped(uint256 indexed id, address indexed donor, uint256 amount)",
+  "error CampaignAlreadyClaimed()",
+  "error ClaimThresholdNotMet()",
+  "error ClaimThresholdMet()",
+  "error NotCreator()",
+  "error GoalBelowMin()",
+  "error GoalAboveMax()",
+  "error DeadlineTooFar()",
+  "error AmountMustBeZeroForETH()",
+  "error MsgValueMustBeZeroForUSDC()",
+];
+
+// Minimal ERC-20 ABI — enough for balanceOf/allowance/approve.
+export const ERC20_ABI = [
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)",
+  "function balanceOf(address owner) view returns (uint256)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "event Approval(address indexed owner, address indexed spender, uint256 value)",
+  "event Transfer(address indexed from, address indexed to, uint256 value)",
+];
