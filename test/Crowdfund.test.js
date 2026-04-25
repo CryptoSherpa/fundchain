@@ -20,7 +20,7 @@ describe("Crowdfund", function () {
     await usdc.waitForDeployment();
 
     const CF = await ethers.getContractFactory("Crowdfund");
-    crowdfund = await CF.deploy(await usdc.getAddress());
+    crowdfund = await CF.deploy(await usdc.getAddress(), ethers.ZeroAddress);
 
     // Seed donors with USDC for USDC-path tests.
     for (const s of [donor1, donor2, donor3]) {
@@ -71,6 +71,36 @@ describe("Crowdfund", function () {
 
   it("exposes USDC_TOKEN address from constructor", async () => {
     expect(await crowdfund.USDC_TOKEN()).to.equal(await usdc.getAddress());
+  });
+
+  // ─── Owner override (constructor _owner arg) ─────────────────────────────
+
+  it("constructor with zero address falls back to deployer (msg.sender)", async () => {
+    expect(await crowdfund.owner()).to.equal(owner.address);
+  });
+
+  it("constructor with non-zero owner uses that address as fee recipient", async () => {
+    const CF = await ethers.getContractFactory("Crowdfund");
+    // Deploy from `owner` signer but designate `donor3` as platform owner.
+    const cf = await CF.connect(owner).deploy(await usdc.getAddress(), donor3.address);
+    await cf.waitForDeployment();
+    expect(await cf.owner()).to.equal(donor3.address);
+
+    // End-to-end: fees on a successful claim go to the designated owner, not the deployer.
+    const now = await time.latest();
+    const tx = await cf
+      .connect(creator)
+      .createCampaign("t", "d", "Technology & Innovation", "", GOAL_ETH, now + ONE_WEEK, ETH);
+    const r = await tx.wait();
+    const id = r.logs.find((l) => l.fragment?.name === "CampaignCreated").args[0];
+    await cf.connect(donor1).donate(id, 0, { value: GOAL_ETH });
+
+    const ownerBefore = await ethers.provider.getBalance(donor3.address);
+    await cf.connect(creator).claimFunds(id);
+    const ownerAfter = await ethers.provider.getBalance(donor3.address);
+
+    const expectedFee = (GOAL_ETH * 500n) / 10000n;
+    expect(ownerAfter - ownerBefore).to.equal(expectedFee);
   });
 
   // ─── Create validation (ETH + USDC) ───────────────────────────────────────

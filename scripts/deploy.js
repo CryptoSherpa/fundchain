@@ -39,15 +39,26 @@ async function main() {
     ? await deployLocalMockUSDC(signers)
     : resolveCanonicalUSDC(net);
 
-  // ── 2. Deploy Crowdfund. ──────────────────────────────────────────────────
+  // ── 2. Resolve owner / fee recipient. ─────────────────────────────────────
+  // OWNER_ADDRESS in .env lets a mainnet deployer route platform fees to a
+  // cold/multisig wallet that isn't holding the deployer's hot key. When unset
+  // (or set to the zero address) the contract falls back to msg.sender, which
+  // is the deployer — preserving the original behavior.
+  const ownerArg = resolveOwner(deployer.address);
+
+  // ── 3. Deploy Crowdfund. ──────────────────────────────────────────────────
   const Crowdfund = await hre.ethers.getContractFactory("Crowdfund");
-  const crowdfund = await Crowdfund.deploy(usdcAddress);
+  const crowdfund = await Crowdfund.deploy(usdcAddress, ownerArg);
   await crowdfund.waitForDeployment();
   const crowdfundAddress = await crowdfund.getAddress();
+  const onChainOwner = await crowdfund.owner();
   console.log("Crowdfund deployed to:", crowdfundAddress);
-  console.log("Owner (platform fee recipient):", deployer.address);
+  console.log("Owner (platform fee recipient):", onChainOwner);
+  if (onChainOwner.toLowerCase() !== deployer.address.toLowerCase()) {
+    console.log(`  (overridden via OWNER_ADDRESS; deployer was ${deployer.address})`);
+  }
 
-  // ── 3. Write addresses for the frontend. ─────────────────────────────────
+  // ── 4. Write addresses for the frontend. ─────────────────────────────────
   const config = { address: crowdfundAddress, usdc: usdcAddress, network: net };
   fs.mkdirSync("frontend/src", { recursive: true });
   fs.writeFileSync("frontend/src/contract-address.json", JSON.stringify(config, null, 2));
@@ -69,6 +80,28 @@ async function deployLocalMockUSDC(signers) {
     console.log(`  minted 10,000 mUSDC to ${s.address}`);
   }
   return address;
+}
+
+/** Resolve the owner argument for the Crowdfund constructor.
+ *  - Unset / empty / "0x0…" → ethers.ZeroAddress so the contract uses msg.sender.
+ *  - Anything else must be a valid 20-byte hex address; reject early otherwise.
+ */
+function resolveOwner(deployerAddress) {
+  const raw = (process.env.OWNER_ADDRESS || "").trim();
+  if (!raw) {
+    console.log(`OWNER_ADDRESS not set — using deployer (${deployerAddress}) as owner.`);
+    return hre.ethers.ZeroAddress;
+  }
+  if (!hre.ethers.isAddress(raw)) {
+    throw new Error(`OWNER_ADDRESS in .env is not a valid Ethereum address: '${raw}'`);
+  }
+  if (raw === hre.ethers.ZeroAddress) {
+    console.log("OWNER_ADDRESS is the zero address — using deployer as owner.");
+    return hre.ethers.ZeroAddress;
+  }
+  const checksummed = hre.ethers.getAddress(raw);
+  console.log(`OWNER_ADDRESS set — fees will route to ${checksummed}`);
+  return checksummed;
 }
 
 /** Live-network path: look up canonical USDC. Never touches MockUSDC. */

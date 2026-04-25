@@ -77,8 +77,8 @@ contract Crowdfund is ReentrancyGuard {
     error AmountMustBeZeroForETH();
     error MsgValueMustBeZeroForUSDC();
 
-    constructor(address usdcToken) {
-        owner = msg.sender;
+    constructor(address usdcToken, address _owner) {
+        owner = _owner == address(0) ? msg.sender : _owner;
         USDC_TOKEN = IERC20(usdcToken);
     }
 
