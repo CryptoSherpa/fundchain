@@ -9,6 +9,7 @@
     "node": "hardhat node",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network mainnet",
     "frontend": "cd frontend && npm run dev",
     "backend": "cd backend && npm run dev",
     "backend:start": "cd backend && npm start"

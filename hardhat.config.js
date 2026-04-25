@@ -32,6 +32,10 @@ module.exports = {
       url: process.env.SEPOLIA_RPC_URL || "",
       accounts: privateKey ? [privateKey] : [],
     },
+    mainnet: {
+      url: process.env.MAINNET_RPC_URL || "",
+      accounts: privateKey ? [privateKey] : [],
+    },
     localhost: {
       url: "http://127.0.0.1:8545",
     },

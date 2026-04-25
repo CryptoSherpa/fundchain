@@ -13,6 +13,11 @@ async function main() {
   const net = hre.network.name;
   console.log(`Network: ${net}`);
 
+  // ── -1. Mainnet preflight — fail before touching the network. ────────────
+  // Catches a misconfigured mainnet deploy at zero RPC cost so it can't get
+  // partway through the run before discovering OWNER_ADDRESS is missing.
+  requireOwnerOnMainnet(net);
+
   // ── 0. Signer preflight — fail loudly if the network has no accounts. ─────
   // On live networks hardhat.config passes [PRIVATE_KEY] when the env var is
   // set, else []. An empty accounts array → getSigners() returns [] → later
@@ -40,10 +45,10 @@ async function main() {
     : resolveCanonicalUSDC(net);
 
   // ── 2. Resolve owner / fee recipient. ─────────────────────────────────────
-  // OWNER_ADDRESS in .env lets a mainnet deployer route platform fees to a
-  // cold/multisig wallet that isn't holding the deployer's hot key. When unset
-  // (or set to the zero address) the contract falls back to msg.sender, which
-  // is the deployer — preserving the original behavior.
+  // OWNER_ADDRESS in .env lets a deployer route platform fees to a cold or
+  // multisig wallet. When unset (or set to the zero address) the contract
+  // falls back to msg.sender, which is the deployer — preserved on test
+  // networks. The mainnet preflight above already enforces OWNER_ADDRESS.
   const ownerArg = resolveOwner(deployer.address);
 
   // ── 3. Deploy Crowdfund. ──────────────────────────────────────────────────
@@ -80,6 +85,43 @@ async function deployLocalMockUSDC(signers) {
     console.log(`  minted 10,000 mUSDC to ${s.address}`);
   }
   return address;
+}
+
+/** Mainnet guard: a missing OWNER_ADDRESS on mainnet means platform fees
+ *  flow to the deployer's hot key forever (the contract's `owner` is
+ *  immutable). Surface a loud, hard error so the deploy can't proceed by
+ *  accident; the deployer can still set OWNER_ADDRESS to their own address
+ *  if that's genuinely intended. */
+function requireOwnerOnMainnet(networkName) {
+  if (networkName !== "mainnet") return;
+  const raw = (process.env.OWNER_ADDRESS || "").trim();
+  if (raw && raw !== hre.ethers.ZeroAddress) return;
+
+  const banner = "═".repeat(72);
+  const lines = [
+    "",
+    banner,
+    "  ⚠   MAINNET DEPLOY BLOCKED — OWNER_ADDRESS is not set in .env   ⚠",
+    banner,
+    "",
+    "  The Crowdfund contract's `owner` is immutable and receives ALL",
+    "  platform fees forever. Without OWNER_ADDRESS, fees would be paid",
+    "  to the deployer wallet (a hot key) — almost certainly not what",
+    "  you want for a real mainnet deployment.",
+    "",
+    "  Fix:",
+    "    1. Edit .env in the project root.",
+    "    2. Set OWNER_ADDRESS=<address>  (multisig / cold wallet recommended).",
+    "    3. Re-run `npm run deploy:mainnet`.",
+    "",
+    "  If you genuinely want the deployer to be the fee recipient, set",
+    "  OWNER_ADDRESS to that same deployer address explicitly.",
+    "",
+    banner,
+    "",
+  ];
+  console.error(lines.join("\n"));
+  throw new Error("OWNER_ADDRESS is required for mainnet deploys.");
 }
 
 /** Resolve the owner argument for the Crowdfund constructor.
