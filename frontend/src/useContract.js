@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ethers } from "ethers";
 import {
   useWeb3Modal,
@@ -13,6 +13,33 @@ import { EXPECTED_CHAIN, WALLETCONNECT_CONFIGURED } from "./web3modal";
 const EXPECTED_CHAIN_ID = EXPECTED_CHAIN.chainId;
 const EXPECTED_NETWORK_NAME = contractAddress.network;
 const FALLBACK_RPC = EXPECTED_CHAIN.rpcUrl;
+
+// Build the read-only RPC client once at module load. Doing this at module
+// scope (not inside a hook) means the very first render of any component using
+// useContract() sees a usable readContract — campaigns load without waiting on
+// a useEffect to fire after paint, and without waiting for a wallet to connect.
+// This is the path mobile browsers (which usually have no injected wallet) hit.
+const READ_PROVIDER = (() => {
+  try {
+    const rpcUrl = import.meta.env.VITE_ALCHEMY_RPC_URL || FALLBACK_RPC;
+    // staticNetwork skips the eth_chainId auto-detect round-trip on every call.
+    return new ethers.JsonRpcProvider(
+      rpcUrl,
+      { name: EXPECTED_NETWORK_NAME, chainId: EXPECTED_CHAIN_ID },
+      { staticNetwork: true }
+    );
+  } catch (e) {
+    console.warn("[useContract] could not create read-only provider:", e);
+    return null;
+  }
+})();
+
+const READ_CONTRACT = READ_PROVIDER
+  ? new ethers.Contract(contractAddress.address, CROWDFUND_ABI, READ_PROVIDER)
+  : null;
+const READ_USDC = READ_PROVIDER && contractAddress.usdc
+  ? new ethers.Contract(contractAddress.usdc, ERC20_ABI, READ_PROVIDER)
+  : null;
 
 // ethers v6 BrowserProvider caches the chainId it was constructed with, so any
 // in-flight RPC call after a wallet network switch rejects with
@@ -29,8 +56,10 @@ export function useContract() {
   const { address, chainId: connectedChainId, isConnected } = useWeb3ModalAccount();
   const { walletProvider } = useWeb3ModalProvider();
 
-  const [readContract, setReadContract] = useState(null);
-  const [readUsdc, setReadUsdc] = useState(null);
+  // Stable refs to the module-scope read-only contracts — exposed via the hook
+  // so callers can depend on them in useCallback/useEffect deps lists.
+  const readContract = useMemo(() => READ_CONTRACT, []);
+  const readUsdc     = useMemo(() => READ_USDC, []);
 
   const [provider, setProvider]   = useState(null);
   const [signer,   setSigner]     = useState(null);
@@ -38,22 +67,6 @@ export function useContract() {
   const [usdc,     setUsdc]       = useState(null);
   const [connecting, setConnecting] = useState(false);
   const [error,    setError]      = useState(null);
-
-  // Read-only provider — uses Alchemy if configured, else the chain's public RPC.
-  // Independent of the connected wallet so public reads work even when signed
-  // out, or if the wallet is on the wrong chain.
-  useEffect(() => {
-    try {
-      const rpcUrl = import.meta.env.VITE_ALCHEMY_RPC_URL || FALLBACK_RPC;
-      const p = new ethers.JsonRpcProvider(rpcUrl);
-      setReadContract(new ethers.Contract(contractAddress.address, CROWDFUND_ABI, p));
-      if (contractAddress.usdc) {
-        setReadUsdc(new ethers.Contract(contractAddress.usdc, ERC20_ABI, p));
-      }
-    } catch (e) {
-      console.warn("[useContract] could not create read-only provider/contract:", e);
-    }
-  }, []);
 
   // Wallet-signer provider — rebuilt whenever the connected wallet or chain changes.
   useEffect(() => {

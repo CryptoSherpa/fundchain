@@ -225,3 +225,21 @@
   flex-wrap: wrap;
 }
 .footerBrand { font-weight: 700; color: var(--accent); }
+
+/* ── Responsive ──
+   Below ~720px the page enters single-column territory. The grid's 300px min
+   track was wider than the available content area on common iPhones (e.g.
+   iPhone SE @320px gave 264px of space), pushing cards off-screen. Drop the
+   page padding and force a single full-width column for predictable stacking
+   at 375 / 390 / 414px and below. */
+@media (max-width: 720px) {
+  .main { padding: 24px 16px 64px; }
+  .grid { grid-template-columns: 1fr; gap: 16px; }
+  .sectionHead { gap: 10px; flex-wrap: wrap; }
+  .footer { padding: 20px 16px; }
+}
+
+@media (max-width: 420px) {
+  .main { padding: 20px 12px 56px; }
+  .grid { gap: 14px; }
+}
