@@ -54,6 +54,9 @@ export default function Header({ account, connecting, onConnect, onOpenCreate, t
             >
               My Campaigns
             </button>
+            <a className={styles.tab} href="/docs">
+              Developers
+            </a>
           </nav>
         </div>
 

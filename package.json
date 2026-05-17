@@ -12,7 +12,8 @@
     "deploy:mainnet": "hardhat run scripts/deploy.js --network mainnet",
     "frontend": "cd frontend && npm run dev",
     "backend": "cd backend && npm run dev",
-    "backend:start": "cd backend && npm start"
+    "backend:start": "cd backend && npm start",
+    "mcp": "node mcp/src/index.js"
   },
   "keywords": [],
   "author": "",

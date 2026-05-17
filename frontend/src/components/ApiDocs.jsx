@@ -105,6 +105,46 @@ console.log(json.txHash);`}
             See <code>frontend/src/abi.js</code> and <code>frontend/src/contract-address.json</code>.
           </p>
         </section>
+
+        <section className={styles.section}>
+          <h2>Official clients</h2>
+          <p>
+            Two prebuilt clients wrap this REST surface and handle the x402 handshake for you.
+            Pick the one that matches your stack — both expose the same four operations
+            (list, get, create, donate).
+          </p>
+
+          <h3 style={{ marginTop: 18, marginBottom: 8, color: "#fff", fontSize: "1rem", fontWeight: 700 }}>
+            MCP server (Claude Desktop, MCP-aware agents)
+          </h3>
+          <pre className={styles.code}>{`npm install -g @fundchain/mcp`}</pre>
+          <p>Or wire it into <code className={styles.inline}>claude_desktop_config.json</code>:</p>
+          <pre className={styles.code}>
+{`{
+  "mcpServers": {
+    "fundchain": {
+      "command": "npx",
+      "args": ["-y", "@fundchain/mcp"]
+    }
+  }
+}`}
+          </pre>
+
+          <h3 style={{ marginTop: 22, marginBottom: 8, color: "#fff", fontSize: "1rem", fontWeight: 700 }}>
+            Python SDK
+          </h3>
+          <pre className={styles.code}>{`pip install fundchain`}</pre>
+          <pre className={styles.code}>
+{`from fundchain import FundchainAgent
+
+agent = FundchainAgent(wallet_key="0xYOURKEY")
+print(agent.list_campaigns())
+agent.donate(campaign_id=0, amount_eth="0.01")  # x402 handled transparently`}
+          </pre>
+          <p className={styles.footnote}>
+            Full developer guide at <a href="/docs">/docs</a>.
+          </p>
+        </section>
       </main>
     </div>
   );

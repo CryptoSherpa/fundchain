@@ -1,0 +1,26 @@
+{
+  "name": "@fundchain/mcp",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Model Context Protocol server that exposes the FundChain crowdfunding API as tools for Claude and other MCP-aware AI agents. Handles x402 micropayments automatically.",
+  "bin": {
+    "fundchain-mcp": "src/index.js"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["mcp", "model-context-protocol", "fundchain", "x402", "crowdfunding", "claude"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  }
+}

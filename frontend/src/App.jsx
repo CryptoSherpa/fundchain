@@ -10,6 +10,7 @@ import CampaignModal from "./components/CampaignModal";
 import MyCampaigns from "./components/MyCampaigns";
 import WalletPrompt from "./components/WalletPrompt";
 import ApiDocs from "./components/ApiDocs";
+import Docs from "./components/Docs";
 import styles from "./App.module.css";
 
 function prettyNetworkName(name) {
@@ -25,8 +26,10 @@ const SORT_OPTIONS = [
 
 export default function App() {
   // Simple pathname-based routing — no React Router dep.
-  if (typeof window !== "undefined" && window.location.pathname === "/api-docs") {
-    return <ApiDocs />;
+  if (typeof window !== "undefined") {
+    const path = window.location.pathname;
+    if (path === "/api-docs") return <ApiDocs />;
+    if (path === "/docs")     return <Docs />;
   }
   return <MainApp />;
 }
@@ -38,6 +41,7 @@ function MainApp() {
   } = useContract();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   // Wallet prompt
   const [walletPromptOpen,   setWalletPromptOpen]   = useState(false);
@@ -68,12 +72,23 @@ function MainApp() {
   }, []);
 
   // ── Load campaigns ────────────────────────────────────────────────────────
+  // Prefer the wallet-bound contract when available (so post-tx reads see the
+  // user's just-mined state immediately) but fall back to the read-only RPC
+  // contract — that path works on mobile Safari with no wallet at all.
   const loadCampaigns = useCallback(async () => {
     const rc = contract || readContract;
-    if (!rc) return;
+    if (!rc) {
+      console.error("[loadCampaigns] no contract available — neither wallet nor read-only RPC initialized");
+      setLoadError("Could not initialize an RPC connection. Check your network and reload.");
+      return;
+    }
+    const source = contract ? "wallet" : "read-only RPC";
+    console.log(`[loadCampaigns] starting via ${source}`);
     setLoading(true);
+    setLoadError(null);
     try {
       const count = Number(await rc.campaignCount());
+      console.log(`[loadCampaigns] campaignCount=${count}`);
       const items = await Promise.all(
         Array.from({ length: count }, async (_, i) => {
           const c = await rc.getCampaign(i);
@@ -88,9 +103,12 @@ function MainApp() {
           };
         })
       );
+      console.log(`[loadCampaigns] loaded ${items.length} campaigns`);
       setCampaigns(items.reverse());
     } catch (e) {
-      console.error("Failed to load campaigns:", e);
+      console.error("[loadCampaigns] failed:", e);
+      const reason = e?.shortMessage || e?.info?.error?.message || e?.message || "Unknown error";
+      setLoadError(`Failed to load campaigns: ${reason}`);
     } finally {
       setLoading(false);
     }
@@ -196,6 +214,7 @@ function MainApp() {
 
       <main className={styles.main}>
         {error && <div className={styles.alertError}>{error}</div>}
+        {loadError && <div className={styles.alertError}>{loadError}</div>}
 
         {isWrongNetwork && (
           <div className={styles.alertWarn}>

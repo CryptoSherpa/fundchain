@@ -14,22 +14,43 @@ const EXPECTED_CHAIN_ID = EXPECTED_CHAIN.chainId;
 const EXPECTED_NETWORK_NAME = contractAddress.network;
 const FALLBACK_RPC = EXPECTED_CHAIN.rpcUrl;
 
-// Build the read-only RPC client once at module load. Doing this at module
-// scope (not inside a hook) means the very first render of any component using
-// useContract() sees a usable readContract — campaigns load without waiting on
-// a useEffect to fire after paint, and without waiting for a wallet to connect.
-// This is the path mobile browsers (which usually have no injected wallet) hit.
+// Build the read-only RPC client once at module load. This path is completely
+// independent of window.ethereum / Web3Modal / any injected wallet — it talks
+// directly to Alchemy (or the configured fallback) over fetch. That matters
+// for mobile Safari, where there is no injected wallet at all: this is the
+// only way campaigns load before the user opts to connect.
+//
+// The fallback (cloudflare-eth on mainnet, rpc.sepolia.org on sepolia) is
+// rate-limited and CORS-flaky from mobile networks, so VITE_ALCHEMY_RPC_URL
+// should be set in production. We log loudly when it isn't.
+const READ_RPC_URL = import.meta.env.VITE_ALCHEMY_RPC_URL || FALLBACK_RPC;
+const ALCHEMY_CONFIGURED = Boolean(import.meta.env.VITE_ALCHEMY_RPC_URL);
+
+if (!ALCHEMY_CONFIGURED && typeof window !== "undefined") {
+  console.warn(
+    `[useContract] VITE_ALCHEMY_RPC_URL is not set — falling back to public RPC (${READ_RPC_URL}). ` +
+    `Public RPCs are rate-limited and may CORS-fail on mobile networks; set Alchemy in env to fix.`
+  );
+}
+
 const READ_PROVIDER = (() => {
   try {
-    const rpcUrl = import.meta.env.VITE_ALCHEMY_RPC_URL || FALLBACK_RPC;
-    // staticNetwork skips the eth_chainId auto-detect round-trip on every call.
-    return new ethers.JsonRpcProvider(
-      rpcUrl,
+    // staticNetwork skips the eth_chainId auto-detect round-trip on every call,
+    // and prevents ethers from polling for chain changes on a read-only RPC.
+    const p = new ethers.JsonRpcProvider(
+      READ_RPC_URL,
       { name: EXPECTED_NETWORK_NAME, chainId: EXPECTED_CHAIN_ID },
       { staticNetwork: true }
     );
+    if (typeof window !== "undefined") {
+      console.log(
+        `[useContract] read-only provider ready (chainId=${EXPECTED_CHAIN_ID}, ` +
+        `alchemy=${ALCHEMY_CONFIGURED})`
+      );
+    }
+    return p;
   } catch (e) {
-    console.warn("[useContract] could not create read-only provider:", e);
+    console.error("[useContract] FATAL: could not create read-only provider:", e);
     return null;
   }
 })();
@@ -40,6 +61,13 @@ const READ_CONTRACT = READ_PROVIDER
 const READ_USDC = READ_PROVIDER && contractAddress.usdc
   ? new ethers.Contract(contractAddress.usdc, ERC20_ABI, READ_PROVIDER)
   : null;
+
+if (!READ_CONTRACT && typeof window !== "undefined") {
+  console.error(
+    "[useContract] read-only contract is null — campaigns will not load. " +
+    "Check VITE_ALCHEMY_RPC_URL and contract-address.json."
+  );
+}
 
 // ethers v6 BrowserProvider caches the chainId it was constructed with, so any
 // in-flight RPC call after a wallet network switch rejects with
