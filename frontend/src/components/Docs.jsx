@@ -58,6 +58,98 @@ with a 1.5 ETH goal, 30-day deadline, in the Environment category.`}
 
         {/* ─────────────────────────────────────────────────────────────── */}
         <section className={styles.section}>
+          <h2>Connect Your Wallet to Your Agent</h2>
+          <p>
+            AI agents need a funded EVM wallet to create campaigns and donate. The agent
+            signs transactions with its <strong>private key</strong>, so you'll set up a
+            dedicated wallet, fund it, and pass the key to the SDK or MCP server via an
+            environment variable.
+          </p>
+
+          <p className={styles.warning}>
+            <strong>Security first:</strong> create a <strong>dedicated agent wallet</strong> —
+            never use your main wallet. The agent will sign transactions autonomously, so
+            anything in that wallet is fair game for the agent (and anyone who compromises
+            the key). Keep the balance small.
+          </p>
+
+          <h3 className={styles.subhead}>1. Create a dedicated wallet in MetaMask</h3>
+          <ol className={styles.steps}>
+            <li>Open MetaMask → click your account icon (top right) → <strong>Add account or hardware wallet</strong> → <strong>Add a new Ethereum account</strong>.</li>
+            <li>Name it something obvious like <code>fundchain-agent</code> so you don't confuse it with your main wallet.</li>
+            <li>Copy the new account's <strong>public address</strong> — you'll send funds here.</li>
+          </ol>
+
+          <h3 className={styles.subhead}>2. Export the private key</h3>
+          <ol className={styles.steps}>
+            <li>With the agent account selected, click the ⋮ menu → <strong>Account details</strong> → <strong>Show private key</strong>.</li>
+            <li>Enter your MetaMask password and reveal the key. It will look like <code>0xabc123…</code> (64 hex chars after the <code>0x</code>).</li>
+            <li>Copy it once — you'll paste it straight into an environment variable in the next step. Do <strong>not</strong> save it in a file or paste it into chat.</li>
+          </ol>
+
+          <h3 className={styles.subhead}>3. Fund the wallet</h3>
+          <ol className={styles.steps}>
+            <li>Send a small amount of <strong>ETH</strong> to cover gas + x402 fees (0.0001 ETH per write). Start with ~0.01 ETH — enough for ~100 calls.</li>
+            <li>If you plan to donate in <strong>USDC</strong>, send some USDC too (the agent still pays gas in ETH).</li>
+            <li>On testnets, grab ETH from a faucet (e.g. <a href="https://sepoliafaucet.com" target="_blank" rel="noreferrer">Sepolia faucet</a>) and USDC from <a href="https://faucet.circle.com" target="_blank" rel="noreferrer">Circle's testnet faucet</a>.</li>
+          </ol>
+
+          <h3 className={styles.subhead}>4. Wire the key into your agent</h3>
+          <p>Set the key as an environment variable — never hardcode it.</p>
+
+          <p><strong>Shell (macOS / Linux):</strong></p>
+          <pre className={styles.code}>
+{`# In your shell profile (~/.zshrc, ~/.bashrc) or a .env file
+export AGENT_WALLET_KEY="0xabc123...your-agent-wallet-private-key"`}
+          </pre>
+
+          <p><strong>Python SDK:</strong></p>
+          <pre className={styles.code}>
+{`import os
+from fundchain import FundchainAgent
+
+agent = FundchainAgent(
+    wallet_key=os.environ["AGENT_WALLET_KEY"],  # Never hardcode!
+)
+
+# Now the agent can browse, create, and donate.
+agent.donate(campaign_id=0, amount_eth="0.01")`}
+          </pre>
+
+          <p><strong>MCP server (Claude Desktop config):</strong></p>
+          <pre className={styles.code}>
+{`{
+  "mcpServers": {
+    "fundchain": {
+      "command": "node",
+      "args": ["/path/to/mcp/src/index.js"],
+      "env": {
+        "AGENT_WALLET_KEY": "0x...",
+        "FUNDCHAIN_API_URL": "https://fundchain.up.railway.app"
+      }
+    }
+  }
+}`}
+          </pre>
+          <p className={styles.note}>
+            Claude Desktop reads <code>claude_desktop_config.json</code> on startup and
+            injects the <code>env</code> block into the MCP server's process — the key
+            never appears in chat. Restart Claude Desktop after editing the file.
+          </p>
+
+          <h3 className={styles.subhead}>Security best practices</h3>
+          <ul>
+            <li><strong>Dedicated wallet only</strong> — never reuse your main wallet. Treat the agent wallet like a hot wallet for a single app.</li>
+            <li><strong>Environment variables only</strong> — never commit the key to git, paste it into a prompt, or hardcode it in source. Add <code>.env</code> to <code>.gitignore</code>.</li>
+            <li><strong>Keep the balance small</strong> — top up as the agent works. A drained wallet limits the blast radius of a compromised key.</li>
+            <li><strong>Monitor on Etherscan</strong> — bookmark the agent address on <a href="https://etherscan.io" target="_blank" rel="noreferrer">Etherscan</a> (or the appropriate L2 explorer) to watch activity.</li>
+            <li><strong>Rotate immediately if compromised</strong> — generate a new wallet, move funds, swap the env var. The old key is permanently burned.</li>
+            <li><strong>Set spend caps in your prompts</strong> — tell the agent its budget ("donate at most 0.05 ETH total"); models will respect explicit limits.</li>
+          </ul>
+        </section>
+
+        {/* ─────────────────────────────────────────────────────────────── */}
+        <section className={styles.section}>
           <h2>API Reference</h2>
           <p>
             Base URL: <code className={styles.inline}>{API_BASE}</code>. Reads are free; writes
@@ -127,9 +219,10 @@ with a 1.5 ETH goal, 30-day deadline, in the Environment category.`}
 
           <p>Browse and donate:</p>
           <pre className={styles.code}>
-{`from fundchain import FundchainAgent
+{`import os
+from fundchain import FundchainAgent
 
-agent = FundchainAgent(wallet_key="0xYOURPRIVATEKEY")
+agent = FundchainAgent(wallet_key=os.environ["AGENT_WALLET_KEY"])
 
 # Free
 listing = agent.list_campaigns()
